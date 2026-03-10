@@ -73,8 +73,8 @@ function ScanButton() {
   );
 }
 
+export default function DashboardPage() {
 
-  const [search, setSearch] = useState('');
   const [neighborhood, setNeighborhood] = useState('');
   const [topic, setTopic] = useState('');
   const [source, setSource] = useState('');
