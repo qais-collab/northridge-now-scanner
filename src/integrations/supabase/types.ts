@@ -201,7 +201,11 @@ export type Database = {
           created_at: string
           feed_url: string | null
           id: string
+          items_today: number
           last_checked_at: string | null
+          last_error: string | null
+          last_scan_at: string | null
+          last_success_at: string | null
           name: string
           notes: string | null
           priority: number
@@ -215,7 +219,11 @@ export type Database = {
           created_at?: string
           feed_url?: string | null
           id?: string
+          items_today?: number
           last_checked_at?: string | null
+          last_error?: string | null
+          last_scan_at?: string | null
+          last_success_at?: string | null
           name: string
           notes?: string | null
           priority?: number
@@ -229,7 +237,11 @@ export type Database = {
           created_at?: string
           feed_url?: string | null
           id?: string
+          items_today?: number
           last_checked_at?: string | null
+          last_error?: string | null
+          last_scan_at?: string | null
+          last_success_at?: string | null
           name?: string
           notes?: string | null
           priority?: number
