@@ -45,8 +45,35 @@ function sortArticles(articles: Article[], sortBy: SortKey): Article[] {
     default: return sorted;
   }
 }
+function ScanButton() {
+  const [scanning, setScanning] = useState(false);
+  const qc = useQueryClient();
 
-export default function DashboardPage() {
+  const runScan = async () => {
+    setScanning(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('ingest-rss');
+      if (error) throw error;
+      toast.success(`Scan complete: ${data.articles_inserted} new articles from ${data.sources_checked} sources`);
+      qc.invalidateQueries({ queryKey: ['articles'] });
+      qc.invalidateQueries({ queryKey: ['article-stats'] });
+      qc.invalidateQueries({ queryKey: ['sources'] });
+    } catch (e: any) {
+      toast.error(`Scan failed: ${e.message}`);
+    } finally {
+      setScanning(false);
+    }
+  };
+
+  return (
+    <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={runScan} disabled={scanning}>
+      {scanning ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+      {scanning ? 'Scanning…' : 'Run Scan'}
+    </Button>
+  );
+}
+
+
   const [search, setSearch] = useState('');
   const [neighborhood, setNeighborhood] = useState('');
   const [topic, setTopic] = useState('');
