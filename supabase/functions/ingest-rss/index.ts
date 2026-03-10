@@ -135,7 +135,9 @@ Deno.serve(async (req) => {
         let sourceInserted = 0;
 
         const SPORTS_KEYWORDS = /\b(basketball|baseball|football|soccer|tournament|athletics)\b/i;
-        const LOCAL_KEYWORDS = /\b(CSUN campus|Northridge)\b/i;
+        const LOCAL_KEYWORDS = /\b(CSUN campus|Northridge|Porter Ranch|Granada Hills|Chatsworth|Reseda|Winnetka|North Hills|Canoga Park|San Fernando Valley)\b/i;
+        const PRIORITY_KEYWORDS = /\b(fire|shooting|earthquake|crash|closure|arrest|homicide|robbery|evacuation|power outage|water main|zoning|council vote|school board)\b/i;
+        const isHyperlocal = source.category === "hyperlocal_publisher";
 
         const newArticles = items
           .filter((item) => item.url && !existingUrls.has(item.url))
@@ -143,8 +145,21 @@ Deno.serve(async (req) => {
             const text = `${item.title} ${item.summary}`;
             const isSports = SPORTS_KEYWORDS.test(text);
             const hasLocal = LOCAL_KEYWORDS.test(text);
+            const hasKeyword = PRIORITY_KEYWORDS.test(text);
             const topicGuess = isSports ? "sports" : null;
-            const scoreAdj = isSports && !hasLocal ? -2 : 0;
+
+            let score = 0;
+            // Sports penalty unless local
+            if (isSports && !hasLocal) score -= 2;
+            // Keyword match +2
+            if (hasKeyword) score += 2;
+            // Hyperlocal source +2
+            if (isHyperlocal) score += 2;
+            // Published today +1
+            if (item.published_at) {
+              const hours = (Date.now() - new Date(item.published_at).getTime()) / 3600000;
+              if (hours <= 24) score += 1;
+            }
 
             return {
               title: item.title,
@@ -154,7 +169,7 @@ Deno.serve(async (req) => {
               source_id: source.id,
               source_name: source.name,
               status: "new" as const,
-              relevance_score: scoreAdj,
+              relevance_score: score,
               freshness_bucket: "today" as const,
               is_duplicate: false,
               use_for_newsletter: false,
