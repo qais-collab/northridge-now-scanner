@@ -75,7 +75,7 @@ function ScanButton() {
 
 export default function DashboardPage() {
 
-  const [neighborhood, setNeighborhood] = useState('');
+  const [search, setSearch] = useState('');
   const [topic, setTopic] = useState('');
   const [source, setSource] = useState('');
   const [freshnessHours, setFreshnessHours] = useState('');
