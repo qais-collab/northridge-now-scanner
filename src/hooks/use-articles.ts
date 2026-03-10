@@ -11,6 +11,7 @@ export function useArticles(filters?: {
   newsletterOnly?: boolean;
   socialOnly?: boolean;
   search?: string;
+  freshnessHours?: number;
 }) {
   return useQuery({
     queryKey: ['articles', filters],
@@ -29,6 +30,11 @@ export function useArticles(filters?: {
       if (filters?.newsletterOnly) query = query.eq('use_for_newsletter', true);
       if (filters?.socialOnly) query = query.eq('use_for_social', true);
       if (filters?.search) query = query.or(`title.ilike.%${filters.search}%,source_name.ilike.%${filters.search}%,summary.ilike.%${filters.search}%`);
+
+      if (filters?.freshnessHours) {
+        const since = new Date(Date.now() - filters.freshnessHours * 60 * 60 * 1000).toISOString();
+        query = query.gte('published_at', since);
+      }
 
       const { data, error } = await query;
       if (error) throw error;
@@ -81,6 +87,22 @@ export function useArticleStats() {
         social: articles.filter(a => a.use_for_social).length,
         total: articles.length,
       };
+    },
+  });
+}
+
+export function useDuplicateGroup(groupId: string | null, excludeId: string) {
+  return useQuery({
+    queryKey: ['duplicate-group', groupId],
+    enabled: !!groupId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('articles')
+        .select('id, title, source_name, url')
+        .eq('duplicate_group_id', groupId!)
+        .neq('id', excludeId);
+      if (error) throw error;
+      return data;
     },
   });
 }
