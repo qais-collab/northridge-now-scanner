@@ -134,22 +134,34 @@ Deno.serve(async (req) => {
         const items = parseRSS(xml);
         let sourceInserted = 0;
 
+        const SPORTS_KEYWORDS = /\b(basketball|baseball|football|soccer|tournament|athletics)\b/i;
+        const LOCAL_KEYWORDS = /\b(CSUN campus|Northridge)\b/i;
+
         const newArticles = items
           .filter((item) => item.url && !existingUrls.has(item.url))
-          .map((item) => ({
-            title: item.title,
-            url: item.url,
-            published_at: item.published_at,
-            summary: item.summary || null,
-            source_id: source.id,
-            source_name: source.name,
-            status: "new" as const,
-            relevance_score: 0,
-            freshness_bucket: "today" as const,
-            is_duplicate: false,
-            use_for_newsletter: false,
-            use_for_social: false,
-          }));
+          .map((item) => {
+            const text = `${item.title} ${item.summary}`;
+            const isSports = SPORTS_KEYWORDS.test(text);
+            const hasLocal = LOCAL_KEYWORDS.test(text);
+            const topicGuess = isSports ? "sports" : null;
+            const scoreAdj = isSports && !hasLocal ? -2 : 0;
+
+            return {
+              title: item.title,
+              url: item.url,
+              published_at: item.published_at,
+              summary: item.summary || null,
+              source_id: source.id,
+              source_name: source.name,
+              status: "new" as const,
+              relevance_score: scoreAdj,
+              freshness_bucket: "today" as const,
+              is_duplicate: false,
+              use_for_newsletter: false,
+              use_for_social: false,
+              topic_guess: topicGuess,
+            };
+          });
 
         if (newArticles.length > 0) {
           // Insert in batches of 50
