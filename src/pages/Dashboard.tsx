@@ -8,11 +8,13 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Newspaper, Copy, ListChecks, Mail, Share2, Loader2, ArrowUpDown, Zap } from 'lucide-react';
+import { Newspaper, Copy, ListChecks, Mail, Share2, Loader2, ArrowUpDown, Zap, RefreshCw } from 'lucide-react';
 import { useState, useMemo } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { NEIGHBORHOODS, TOPICS, TOPIC_LABELS } from '@/lib/types';
 import type { Article } from '@/lib/types';
-
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 function StatCard({ label, value, icon: Icon, color }: { label: string; value: number; icon: any; color?: string }) {
   return (
     <Card>
@@ -43,8 +45,36 @@ function sortArticles(articles: Article[], sortBy: SortKey): Article[] {
     default: return sorted;
   }
 }
+function ScanButton() {
+  const [scanning, setScanning] = useState(false);
+  const qc = useQueryClient();
+
+  const runScan = async () => {
+    setScanning(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('ingest-rss');
+      if (error) throw error;
+      toast.success(`Scan complete: ${data.articles_inserted} new articles from ${data.sources_checked} sources`);
+      qc.invalidateQueries({ queryKey: ['articles'] });
+      qc.invalidateQueries({ queryKey: ['article-stats'] });
+      qc.invalidateQueries({ queryKey: ['sources'] });
+    } catch (e: any) {
+      toast.error(`Scan failed: ${e.message}`);
+    } finally {
+      setScanning(false);
+    }
+  };
+
+  return (
+    <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={runScan} disabled={scanning}>
+      {scanning ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+      {scanning ? 'Scanning…' : 'Run Scan'}
+    </Button>
+  );
+}
 
 export default function DashboardPage() {
+
   const [search, setSearch] = useState('');
   const [neighborhood, setNeighborhood] = useState('');
   const [topic, setTopic] = useState('');
@@ -81,6 +111,7 @@ export default function DashboardPage() {
             <p className="text-[11px] text-muted-foreground">Morning scan overview</p>
           </div>
           <div className="flex items-center gap-2">
+            <ScanButton />
             <DigestPreview />
             <div className="flex items-center gap-1.5 bg-card border rounded-md px-2 py-1">
               <Zap className="h-3 w-3 text-primary" />
