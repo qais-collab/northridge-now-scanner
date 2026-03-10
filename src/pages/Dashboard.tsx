@@ -8,11 +8,13 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Newspaper, Copy, ListChecks, Mail, Share2, Loader2, ArrowUpDown, Zap } from 'lucide-react';
+import { Newspaper, Copy, ListChecks, Mail, Share2, Loader2, ArrowUpDown, Zap, RefreshCw } from 'lucide-react';
 import { useState, useMemo } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { NEIGHBORHOODS, TOPICS, TOPIC_LABELS } from '@/lib/types';
 import type { Article } from '@/lib/types';
-
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 function StatCard({ label, value, icon: Icon, color }: { label: string; value: number; icon: any; color?: string }) {
   return (
     <Card>
