@@ -1,1 +1,7 @@
 project_id = "ctqylsjqvjvphrniewuv"
+
+[functions.ingest-rss]
+verify_jwt = false
+
+[functions.test-feed]
+verify_jwt = false
