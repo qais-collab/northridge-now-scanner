@@ -52,9 +52,36 @@ function ScanButton() {
   const runScan = async () => {
     setScanning(true);
     try {
-      const { data, error } = await supabase.functions.invoke('ingest-rss');
-      if (error) throw error;
-      toast.success(`Scan complete: ${data.articles_inserted} new articles from ${data.sources_checked} sources`);
+      // Run RSS and Watchlist ingestion in parallel
+      const [rssResult, watchlistResult] = await Promise.allSettled([
+        supabase.functions.invoke('ingest-rss'),
+        supabase.functions.invoke('ingest-watchlist'),
+      ]);
+
+      let totalInserted = 0;
+      let totalSources = 0;
+      const errors: string[] = [];
+
+      if (rssResult.status === 'fulfilled' && !rssResult.value.error) {
+        totalInserted += rssResult.value.data.articles_inserted ?? 0;
+        totalSources += rssResult.value.data.sources_checked ?? 0;
+      } else {
+        errors.push('RSS scan failed');
+      }
+
+      if (watchlistResult.status === 'fulfilled' && !watchlistResult.value.error) {
+        totalInserted += watchlistResult.value.data.articles_inserted ?? 0;
+        totalSources += watchlistResult.value.data.sources_checked ?? 0;
+      } else {
+        errors.push('Watchlist scan failed');
+      }
+
+      if (errors.length > 0 && totalInserted === 0) {
+        toast.error(`Scan failed: ${errors.join(', ')}`);
+      } else {
+        toast.success(`Scan complete: ${totalInserted} new articles from ${totalSources} sources${errors.length ? ` (${errors.join(', ')})` : ''}`);
+      }
+
       qc.invalidateQueries({ queryKey: ['articles'] });
       qc.invalidateQueries({ queryKey: ['article-stats'] });
       qc.invalidateQueries({ queryKey: ['sources'] });

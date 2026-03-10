@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.test-feed]
 verify_jwt = false
+
+[functions.ingest-watchlist]
+verify_jwt = false
