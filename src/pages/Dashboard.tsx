@@ -83,6 +83,7 @@ export default function DashboardPage() {
             <p className="text-[11px] text-muted-foreground">Morning scan overview</p>
           </div>
           <div className="flex items-center gap-2">
+            <ScanButton />
             <DigestPreview />
             <div className="flex items-center gap-1.5 bg-card border rounded-md px-2 py-1">
               <Zap className="h-3 w-3 text-primary" />
