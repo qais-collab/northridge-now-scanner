@@ -8,11 +8,21 @@ RSS and watchlist ingestion pipeline: edge functions, source health tracking, fe
 
 ## Sports Keyword Detection (both ingest functions)
 - Keywords: basketball, baseball, football, soccer, tournament, athletics
-- Sets topic_guess = "sports" and relevance_score -2 unless text contains "CSUN campus" or "Northridge"
+- Sets topic_guess = "sports" and relevance_score -2 unless text contains local keywords
 
 ## Source Health Columns (sources table)
 - last_scan_at, last_success_at, last_error, items_today
 
+## Source Type Normalization
+- Changing source_type auto-clears: feed_url (non-RSS), last_error, last_scan_at, last_success_at, items_today
+- UI conditionally shows Test Feed (RSS only), "Watchlist scan" label, or "Manual" label
+- "Reset Source State" button clears stale health fields for any source
+
 ## Dashboard
 - "Run Scan" button triggers both ingest-rss and ingest-watchlist in parallel
-- Sources page has "Test Feed" button per source with inline results
+- Sources page has "Test Feed" button per RSS source with inline results
+
+## Components
+- src/components/sources/SourceForm.tsx — add/edit form, auto-clears fields on type change
+- src/components/sources/FeedTestButton.tsx — RSS feed test with inline results
+- src/components/sources/ResetSourceButton.tsx — clears stale health metadata
