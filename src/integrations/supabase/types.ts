@@ -14,7 +14,229 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      article_tags: {
+        Row: {
+          article_id: string
+          created_at: string
+          id: string
+          tag: string
+        }
+        Insert: {
+          article_id: string
+          created_at?: string
+          id?: string
+          tag: string
+        }
+        Update: {
+          article_id?: string
+          created_at?: string
+          id?: string
+          tag?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "article_tags_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "articles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      articles: {
+        Row: {
+          created_at: string
+          duplicate_group_id: string | null
+          editor_notes: string | null
+          freshness_bucket: Database["public"]["Enums"]["freshness_bucket"]
+          id: string
+          image_url: string | null
+          imported_at: string
+          is_duplicate: boolean
+          neighborhood_guess: string | null
+          published_at: string | null
+          raw_location_text: string | null
+          relevance_score: number
+          source_id: string | null
+          source_name: string | null
+          status: Database["public"]["Enums"]["article_status"]
+          summary: string | null
+          title: string
+          topic_guess: string | null
+          url: string | null
+          use_for_newsletter: boolean
+          use_for_social: boolean
+          why_it_matters: string | null
+        }
+        Insert: {
+          created_at?: string
+          duplicate_group_id?: string | null
+          editor_notes?: string | null
+          freshness_bucket?: Database["public"]["Enums"]["freshness_bucket"]
+          id?: string
+          image_url?: string | null
+          imported_at?: string
+          is_duplicate?: boolean
+          neighborhood_guess?: string | null
+          published_at?: string | null
+          raw_location_text?: string | null
+          relevance_score?: number
+          source_id?: string | null
+          source_name?: string | null
+          status?: Database["public"]["Enums"]["article_status"]
+          summary?: string | null
+          title: string
+          topic_guess?: string | null
+          url?: string | null
+          use_for_newsletter?: boolean
+          use_for_social?: boolean
+          why_it_matters?: string | null
+        }
+        Update: {
+          created_at?: string
+          duplicate_group_id?: string | null
+          editor_notes?: string | null
+          freshness_bucket?: Database["public"]["Enums"]["freshness_bucket"]
+          id?: string
+          image_url?: string | null
+          imported_at?: string
+          is_duplicate?: boolean
+          neighborhood_guess?: string | null
+          published_at?: string | null
+          raw_location_text?: string | null
+          relevance_score?: number
+          source_id?: string | null
+          source_name?: string | null
+          status?: Database["public"]["Enums"]["article_status"]
+          summary?: string | null
+          title?: string
+          topic_guess?: string | null
+          url?: string | null
+          use_for_newsletter?: boolean
+          use_for_social?: boolean
+          why_it_matters?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "articles_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      neighborhoods: {
+        Row: {
+          created_at: string
+          display_order: number
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      scan_runs: {
+        Row: {
+          articles_found: number
+          completed_at: string | null
+          created_at: string
+          duplicates_found: number
+          id: string
+          started_at: string
+        }
+        Insert: {
+          articles_found?: number
+          completed_at?: string | null
+          created_at?: string
+          duplicates_found?: number
+          id?: string
+          started_at?: string
+        }
+        Update: {
+          articles_found?: number
+          completed_at?: string | null
+          created_at?: string
+          duplicates_found?: number
+          id?: string
+          started_at?: string
+        }
+        Relationships: []
+      }
+      shortlists: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      sources: {
+        Row: {
+          active: boolean
+          base_url: string | null
+          category: Database["public"]["Enums"]["source_category"]
+          coverage_area: string | null
+          created_at: string
+          feed_url: string | null
+          id: string
+          last_checked_at: string | null
+          name: string
+          notes: string | null
+          priority: number
+          source_type: Database["public"]["Enums"]["source_type"]
+        }
+        Insert: {
+          active?: boolean
+          base_url?: string | null
+          category?: Database["public"]["Enums"]["source_category"]
+          coverage_area?: string | null
+          created_at?: string
+          feed_url?: string | null
+          id?: string
+          last_checked_at?: string | null
+          name: string
+          notes?: string | null
+          priority?: number
+          source_type?: Database["public"]["Enums"]["source_type"]
+        }
+        Update: {
+          active?: boolean
+          base_url?: string | null
+          category?: Database["public"]["Enums"]["source_category"]
+          coverage_area?: string | null
+          created_at?: string
+          feed_url?: string | null
+          id?: string
+          last_checked_at?: string | null
+          name?: string
+          notes?: string | null
+          priority?: number
+          source_type?: Database["public"]["Enums"]["source_type"]
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +245,19 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      article_status: "new" | "reviewed" | "saved" | "dismissed" | "shortlisted"
+      freshness_bucket: "breaking" | "today" | "recent" | "older"
+      source_category:
+        | "major_news"
+        | "hyperlocal_publisher"
+        | "government"
+        | "public_safety"
+        | "transportation"
+        | "schools"
+        | "events"
+        | "civic_planning"
+        | "community_organizations"
+      source_type: "rss" | "watchlist" | "manual"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +384,21 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      article_status: ["new", "reviewed", "saved", "dismissed", "shortlisted"],
+      freshness_bucket: ["breaking", "today", "recent", "older"],
+      source_category: [
+        "major_news",
+        "hyperlocal_publisher",
+        "government",
+        "public_safety",
+        "transportation",
+        "schools",
+        "events",
+        "civic_planning",
+        "community_organizations",
+      ],
+      source_type: ["rss", "watchlist", "manual"],
+    },
   },
 } as const
