@@ -199,6 +199,7 @@ Deno.serve(async (req) => {
               use_for_newsletter: false,
               use_for_social: false,
               topic_guess: topicGuess,
+              neighborhood_guess: detectNeighborhood(item.title, item.summary, source.coverage_area),
             };
           });
 
