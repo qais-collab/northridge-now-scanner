@@ -7,15 +7,15 @@ import { useState } from 'react';
 import { DEFAULT_WEIGHTS, type ScoringWeights } from '@/lib/scoring';
 
 const WEIGHT_LABELS: Record<keyof ScoringWeights, string> = {
-  northridgeMention: 'Northridge mention',
-  adjacentArea: 'Adjacent area match',
+  strongLocal: 'Strong local keyword (+Northridge, CSUN, etc.)',
+  priorityKeyword: 'Priority keyword (fire, shooting, etc.)',
+  hyperlocalSource: 'Hyperlocal source bonus',
   fresh24h: 'Published within 24h',
   recent72h: 'Published within 72h',
-  priorityTopic: 'Priority topic (safety, schools, civic)',
-  eventsOrBusiness: 'Events or business topic',
+  sportsNoLocal: 'Sports without local context',
+  missingDate: 'Missing publish date',
   duplicate: 'Duplicate penalty',
   outsideCoverage: 'Outside coverage area',
-  highPrioritySource: 'High-priority source (8+)',
 };
 
 export default function SettingsPage() {
