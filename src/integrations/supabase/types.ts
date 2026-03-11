@@ -150,29 +150,49 @@ export type Database = {
       scan_runs: {
         Row: {
           articles_found: number
+          candidates_found: number
           completed_at: string | null
           created_at: string
           duplicates_found: number
           id: string
+          rejected_count: number
+          scan_type: string | null
+          source_id: string | null
           started_at: string
         }
         Insert: {
           articles_found?: number
+          candidates_found?: number
           completed_at?: string | null
           created_at?: string
           duplicates_found?: number
           id?: string
+          rejected_count?: number
+          scan_type?: string | null
+          source_id?: string | null
           started_at?: string
         }
         Update: {
           articles_found?: number
+          candidates_found?: number
           completed_at?: string | null
           created_at?: string
           duplicates_found?: number
           id?: string
+          rejected_count?: number
+          scan_type?: string | null
+          source_id?: string | null
           started_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "scan_runs_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "sources"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       shortlists: {
         Row: {
@@ -195,10 +215,15 @@ export type Database = {
       sources: {
         Row: {
           active: boolean
+          article_date_selector: string | null
+          article_link_selector: string | null
+          article_summary_selector: string | null
+          article_title_selector: string | null
           base_url: string | null
           category: Database["public"]["Enums"]["source_category"]
           coverage_area: string | null
           created_at: string
+          exclude_url_patterns: string[] | null
           feed_url: string | null
           id: string
           items_today: number
@@ -209,14 +234,20 @@ export type Database = {
           name: string
           notes: string | null
           priority: number
+          required_keywords: string[] | null
           source_type: Database["public"]["Enums"]["source_type"]
         }
         Insert: {
           active?: boolean
+          article_date_selector?: string | null
+          article_link_selector?: string | null
+          article_summary_selector?: string | null
+          article_title_selector?: string | null
           base_url?: string | null
           category?: Database["public"]["Enums"]["source_category"]
           coverage_area?: string | null
           created_at?: string
+          exclude_url_patterns?: string[] | null
           feed_url?: string | null
           id?: string
           items_today?: number
@@ -227,14 +258,20 @@ export type Database = {
           name: string
           notes?: string | null
           priority?: number
+          required_keywords?: string[] | null
           source_type?: Database["public"]["Enums"]["source_type"]
         }
         Update: {
           active?: boolean
+          article_date_selector?: string | null
+          article_link_selector?: string | null
+          article_summary_selector?: string | null
+          article_title_selector?: string | null
           base_url?: string | null
           category?: Database["public"]["Enums"]["source_category"]
           coverage_area?: string | null
           created_at?: string
+          exclude_url_patterns?: string[] | null
           feed_url?: string | null
           id?: string
           items_today?: number
@@ -245,6 +282,7 @@ export type Database = {
           name?: string
           notes?: string | null
           priority?: number
+          required_keywords?: string[] | null
           source_type?: Database["public"]["Enums"]["source_type"]
         }
         Relationships: []
