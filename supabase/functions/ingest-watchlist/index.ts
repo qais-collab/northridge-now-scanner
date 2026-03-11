@@ -61,6 +61,30 @@ function extractPreviewFromMeta(html: string, url: string): string {
   return "";
 }
 
+const NEIGHBORHOOD_PATTERNS: [RegExp, string][] = [
+  [/\bporter\s+ranch\b/i, "Porter Ranch"],
+  [/\bgranada\s+hills\b/i, "Granada Hills"],
+  [/\bcanoga\s+park\b/i, "Canoga Park"],
+  [/\bnorth\s+hills\b/i, "North Hills"],
+  [/\bmission\s+hills\b/i, "Mission Hills"],
+  [/\bsan\s+fernando\s+valley\b/i, "San Fernando Valley"],
+  [/\bsfv\b/i, "San Fernando Valley"],
+  [/\bcsun\b/i, "Northridge"],
+  [/\bnorthridge\b/i, "Northridge"],
+  [/\bchatsworth\b/i, "Chatsworth"],
+  [/\breseda\b/i, "Reseda"],
+  [/\bwinnetka\b/i, "Winnetka"],
+];
+
+function detectNeighborhood(title: string, summary: string, coverageArea: string | null): string {
+  const text = `${title} ${summary}`;
+  for (const [pattern, name] of NEIGHBORHOOD_PATTERNS) {
+    if (pattern.test(text)) return name;
+  }
+  if (coverageArea) return coverageArea;
+  return "Unknown";
+}
+
 interface ExtractedArticle {
   title: string;
   url: string;
@@ -191,6 +215,7 @@ Deno.serve(async (req) => {
               use_for_newsletter: false,
               use_for_social: false,
               topic_guess: topicGuess,
+              neighborhood_guess: detectNeighborhood(item.title, item.summary, source.coverage_area),
             };
           });
 
