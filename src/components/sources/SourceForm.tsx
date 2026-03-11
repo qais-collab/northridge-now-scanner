@@ -22,10 +22,10 @@ export function SourceForm({ source, onSave, onClose }: SourceFormProps) {
   const [sourceType, setSourceType] = useState(source?.source_type || 'manual');
   const [priority, setPriority] = useState(source?.priority || 5);
   const [notes, setNotes] = useState(source?.notes || '');
+  const [coverageArea, setCoverageArea] = useState((source as any)?.coverage_area || '');
 
   const handleTypeChange = (newType: string) => {
     setSourceType(newType as any);
-    // Clear RSS-only fields when switching away from RSS
     if (newType !== 'rss') {
       setFeedUrl('');
     }
@@ -40,10 +40,6 @@ export function SourceForm({ source, onSave, onClose }: SourceFormProps) {
           <SelectContent>{SOURCE_CATEGORIES.map(c => <SelectItem key={c} value={c}>{CATEGORY_LABELS[c]}</SelectItem>)}</SelectContent>
         </Select>
       </div>
-      <div><Label className="text-xs">Base URL</Label><Input value={baseUrl} onChange={e => setBaseUrl(e.target.value)} className="h-8 text-xs mt-1" /></div>
-      {sourceType === 'rss' && (
-        <div><Label className="text-xs">Feed URL</Label><Input value={feedUrl} onChange={e => setFeedUrl(e.target.value)} className="h-8 text-xs mt-1" placeholder="RSS feed URL" /></div>
-      )}
       <div><Label className="text-xs">Source Type</Label>
         <Select value={sourceType} onValueChange={handleTypeChange}>
           <SelectTrigger className="h-8 text-xs mt-1"><SelectValue /></SelectTrigger>
@@ -54,6 +50,11 @@ export function SourceForm({ source, onSave, onClose }: SourceFormProps) {
           </SelectContent>
         </Select>
       </div>
+      <div><Label className="text-xs">Base URL</Label><Input value={baseUrl} onChange={e => setBaseUrl(e.target.value)} className="h-8 text-xs mt-1" placeholder={sourceType === 'watchlist' ? 'Homepage to crawl' : 'Source website'} /></div>
+      {sourceType === 'rss' && (
+        <div><Label className="text-xs">Feed URL <span className="text-destructive">*</span></Label><Input value={feedUrl} onChange={e => setFeedUrl(e.target.value)} className="h-8 text-xs mt-1" placeholder="RSS feed URL" /></div>
+      )}
+      <div><Label className="text-xs">Coverage Area</Label><Input value={coverageArea} onChange={e => setCoverageArea(e.target.value)} className="h-8 text-xs mt-1" placeholder="e.g. Northridge, Porter Ranch" /></div>
       <div>
         <Label className="text-xs">Priority: {priority}</Label>
         <Slider value={[priority]} onValueChange={([v]) => setPriority(v)} min={1} max={10} step={1} className="mt-2" />
@@ -63,6 +64,8 @@ export function SourceForm({ source, onSave, onClose }: SourceFormProps) {
         <Button variant="ghost" size="sm" onClick={onClose}>Cancel</Button>
         <Button size="sm" onClick={() => {
           if (!name) { toast.error('Name is required'); return; }
+          if (sourceType === 'rss' && !feedUrl) { toast.error('Feed URL is required for RSS sources'); return; }
+
           const data: any = {
             name,
             category,
@@ -71,13 +74,19 @@ export function SourceForm({ source, onSave, onClose }: SourceFormProps) {
             source_type: sourceType,
             priority,
             notes: notes || null,
+            coverage_area: coverageArea || null,
           };
-          // When changing type, clear stale health fields
+
+          // When changing type, clear stale fields from previous type
           if (source && source.source_type !== sourceType) {
             data.last_error = null;
             data.last_scan_at = null;
             data.last_success_at = null;
             data.items_today = 0;
+            // Clear RSS-only fields when switching away
+            if (sourceType !== 'rss') {
+              data.feed_url = null;
+            }
           }
           onSave(data);
         }}>Save</Button>

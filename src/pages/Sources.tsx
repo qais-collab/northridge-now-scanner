@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Pencil, Loader2, CheckCircle, XCircle } from 'lucide-react';
+import { Plus, Pencil, Loader2, CheckCircle, XCircle, Globe, Rss } from 'lucide-react';
 import { useState } from 'react';
 import { CATEGORY_LABELS, type Source } from '@/lib/types';
 import { toast } from 'sonner';
@@ -15,14 +15,12 @@ import { FeedTestButton } from '@/components/sources/FeedTestButton';
 import { ResetSourceButton } from '@/components/sources/ResetSourceButton';
 
 function SourceStatusCell({ source }: { source: Source }) {
-  const s = source as any;
-
-  // Manual sources: no automated status
   if (source.source_type === 'manual') {
     return <span className="text-[10px] text-muted-foreground">Manual</span>;
   }
 
-  // Show error/success only from current source type's scan
+  const s = source as any;
+
   if (s.last_error) {
     return (
       <span className="text-[10px] text-destructive flex items-center gap-0.5">
@@ -32,9 +30,10 @@ function SourceStatusCell({ source }: { source: Source }) {
   }
 
   if (s.last_success_at) {
+    const label = source.source_type === 'watchlist' ? 'Crawl OK' : 'Feed OK';
     return (
       <span className="text-[10px] text-[hsl(var(--score-high))] flex items-center gap-0.5">
-        <CheckCircle className="h-3 w-3" />OK
+        <CheckCircle className="h-3 w-3" />{label}
       </span>
     );
   }
@@ -47,9 +46,19 @@ function SourceTestCell({ source }: { source: Source }) {
     return <FeedTestButton feedUrl={source.feed_url} />;
   }
   if (source.source_type === 'watchlist') {
-    return <span className="text-[10px] text-muted-foreground">Watchlist scan</span>;
+    return (
+      <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+        <Globe className="h-3 w-3" />Watchlist
+      </span>
+    );
   }
   return <span className="text-[10px] text-muted-foreground">—</span>;
+}
+
+function SourceTypeIcon({ type }: { type: string }) {
+  if (type === 'rss') return <Rss className="h-3 w-3 mr-0.5 inline" />;
+  if (type === 'watchlist') return <Globe className="h-3 w-3 mr-0.5 inline" />;
+  return null;
 }
 
 export default function SourcesPage() {
@@ -104,7 +113,12 @@ export default function SourcesPage() {
                   <TableRow key={s.id}>
                     <TableCell className="text-xs font-medium">{s.name}</TableCell>
                     <TableCell><Badge variant="secondary" className="text-[10px]">{CATEGORY_LABELS[s.category]}</Badge></TableCell>
-                    <TableCell><Badge variant="outline" className="text-[10px]">{s.source_type}</Badge></TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="text-[10px]">
+                        <SourceTypeIcon type={s.source_type} />
+                        {s.source_type}
+                      </Badge>
+                    </TableCell>
                     <TableCell className="text-xs font-mono">{s.priority}</TableCell>
                     <TableCell className="text-[10px] text-muted-foreground">
                       {s.last_scan_at ? formatDistanceToNow(new Date(s.last_scan_at), { addSuffix: true }) : '—'}
