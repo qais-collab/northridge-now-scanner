@@ -6,6 +6,13 @@ RSS and watchlist ingestion pipeline: edge functions, source health tracking, fe
 - `test-feed`: Tests a single feed_url — returns reachability, item count, sample title/URL, feed type
 - All have verify_jwt = false in config.toml
 
+## Neighborhood Detection (both ingest functions)
+- ~75 regex patterns in NEIGHBORHOOD_PATTERNS covering exact names, streets, schools, parks, landmarks
+- Neighborhoods: Northridge, Porter Ranch, Granada Hills, Chatsworth, Reseda, Winnetka, Encino, Tarzana, Woodland Hills, West Hills, Pacoima, Arleta, Sylmar, Sun Valley, Panorama City, Van Nuys, Sherman Oaks, Studio City, Lake Balboa, North Hills, Mission Hills, Canoga Park
+- Secondary markers: Devonshire/Nordhoff/Plummer → Northridge, Rinaldi/Sesnon → Porter Ranch, Topanga/Box Canyon → Chatsworth, etc.
+- Fallback: source.coverage_area → "Unknown"
+- Most LA Metro / Daily News articles stay "San Fernando Valley" — genuinely region-wide content
+
 ## Sports Keyword Detection (both ingest functions)
 - Keywords: basketball, baseball, football, soccer, tournament, athletics
 - Sets topic_guess = "sports" and relevance_score -2 unless text contains local keywords
