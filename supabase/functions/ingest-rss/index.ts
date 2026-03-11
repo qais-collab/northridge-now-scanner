@@ -24,18 +24,84 @@ function extractAttr(xml: string, tag: string, attr: string): string {
 }
 
 const NEIGHBORHOOD_PATTERNS: [RegExp, string][] = [
+  // Exact neighborhood names first
   [/\bporter\s+ranch\b/i, "Porter Ranch"],
   [/\bgranada\s+hills\b/i, "Granada Hills"],
   [/\bcanoga\s+park\b/i, "Canoga Park"],
   [/\bnorth\s+hills\b/i, "North Hills"],
   [/\bmission\s+hills\b/i, "Mission Hills"],
-  [/\bsan\s+fernando\s+valley\b/i, "San Fernando Valley"],
-  [/\bsfv\b/i, "San Fernando Valley"],
-  [/\bcsun\b/i, "Northridge"],
   [/\bnorthridge\b/i, "Northridge"],
   [/\bchatsworth\b/i, "Chatsworth"],
   [/\breseda\b/i, "Reseda"],
   [/\bwinnetka\b/i, "Winnetka"],
+  [/\bencino\b/i, "Encino"],
+  [/\btarzana\b/i, "Tarzana"],
+  [/\bwoodland\s+hills\b/i, "Woodland Hills"],
+  [/\bwest\s+hills\b/i, "West Hills"],
+  [/\bpacoima\b/i, "Pacoima"],
+  [/\barleta\b/i, "Arleta"],
+  [/\bsylmar\b/i, "Sylmar"],
+  [/\bsun\s+valley\b/i, "Sun Valley"],
+  [/\bpanorama\s+city\b/i, "Panorama City"],
+  [/\bvan\s+nuys\b/i, "Van Nuys"],
+  [/\bsherman\s+oaks\b/i, "Sherman Oaks"],
+  [/\bstudio\s+city\b/i, "Studio City"],
+  [/\blake\s+balboa\b/i, "Lake Balboa"],
+  // CSUN
+  [/\bcsun\b/i, "Northridge"],
+  [/\bcal\s+state\s+northridge\b/i, "Northridge"],
+  // Streets & landmarks → Northridge
+  [/\bdevonshire\b/i, "Northridge"],
+  [/\bnordhoff\b/i, "Northridge"],
+  [/\bplummer\b/i, "Northridge"],
+  [/\btampa\s+ave\b/i, "Northridge"],
+  [/\blassen\s+st\b/i, "Northridge"],
+  [/\bnorthridge\s+park\b/i, "Northridge"],
+  [/\bnorthridge\s+academy\b/i, "Northridge"],
+  [/\bnobel\s+m/i, "Northridge"],
+  [/\bbeckford\b/i, "Northridge"],
+  [/\bdearborn\s+park\b/i, "Northridge"],
+  // Streets & landmarks → Porter Ranch
+  [/\brinaldi\b/i, "Porter Ranch"],
+  [/\bsesnon\b/i, "Porter Ranch"],
+  [/\bporter\s+ranch\s+town\s+center\b/i, "Porter Ranch"],
+  [/\baliso\s+canyon\b/i, "Porter Ranch"],
+  [/\blimekiln\s+canyon\b/i, "Porter Ranch"],
+  [/\bbee\s+canyon\b/i, "Porter Ranch"],
+  // Streets & landmarks → Granada Hills
+  [/\bgranada\s+hills\s+charter\b/i, "Granada Hills"],
+  [/\bcleveland\s+h/i, "Granada Hills"],
+  [/\bzelzah\b/i, "Granada Hills"],
+  [/\bknollwood\b/i, "Granada Hills"],
+  // Streets & landmarks → Chatsworth
+  [/\btopanga\b/i, "Chatsworth"],
+  [/\bbox\s+canyon\b/i, "Chatsworth"],
+  [/\bsanta\s+susana\b/i, "Chatsworth"],
+  [/\bchatsworth\s+h/i, "Chatsworth"],
+  [/\bstoney\s+point\b/i, "Chatsworth"],
+  // Streets & landmarks → Reseda
+  [/\bvanalden\b/i, "Reseda"],
+  [/\bresheda\b/i, "Reseda"],
+  // Streets & landmarks → Canoga Park
+  [/\bde\s+soto\b/i, "Canoga Park"],
+  [/\bvanowen.*canoga\b/i, "Canoga Park"],
+  [/\bowensmouth\b/i, "Canoga Park"],
+  // Streets & landmarks → North Hills
+  [/\broscoe\b/i, "North Hills"],
+  [/\bwoodman\b/i, "North Hills"],
+  // Streets & landmarks → Mission Hills
+  [/\bbrand\s+park\b/i, "Mission Hills"],
+  [/\bsepulveda\s+va\b/i, "Mission Hills"],
+  // Streets & landmarks → Sylmar
+  [/\bsylmar\s+h/i, "Sylmar"],
+  [/\bold\s+san\s+fernando\s+rd\b/i, "Sylmar"],
+  // Streets & landmarks → Encino
+  [/\bbalboa\b/i, "Encino"],
+  [/\bwoodley\b/i, "Encino"],
+  [/\bsepulveda\s+basin\b/i, "Encino"],
+  // General SFV — keep last as fallback
+  [/\bsan\s+fernando\s+valley\b/i, "San Fernando Valley"],
+  [/\bsfv\b/i, "San Fernando Valley"],
 ];
 
 function detectNeighborhood(title: string, summary: string, coverageArea: string | null): string {
