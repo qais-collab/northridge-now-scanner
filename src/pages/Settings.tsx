@@ -7,7 +7,10 @@ import { useState } from 'react';
 import { DEFAULT_WEIGHTS, type ScoringWeights } from '@/lib/scoring';
 
 const WEIGHT_LABELS: Record<keyof ScoringWeights, string> = {
-  strongLocal: 'Strong local keyword (+Northridge, CSUN, etc.)',
+  strongLocal: 'Strong local city (+3: Northridge, Porter Ranch, etc.)',
+  otherValley: 'Other Valley city (+2: Reseda, Van Nuys, etc.)',
+  landmarkSignal: 'Landmark match (+1: CSUN, Topanga Canyon, etc.)',
+  streetSignal: 'Street/freeway signal (+1: 118, Balboa Blvd, etc.)',
   priorityKeyword: 'Priority keyword (fire, shooting, etc.)',
   hyperlocalSource: 'Hyperlocal source bonus',
   fresh24h: 'Published within 24h',
@@ -15,7 +18,7 @@ const WEIGHT_LABELS: Record<keyof ScoringWeights, string> = {
   sportsNoLocal: 'Sports without local context',
   missingDate: 'Missing publish date',
   duplicate: 'Duplicate penalty',
-  outsideCoverage: 'Outside coverage area',
+  noLocation: 'No location detected',
 };
 
 export default function SettingsPage() {
