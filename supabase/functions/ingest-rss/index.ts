@@ -27,6 +27,16 @@ function normalizeUrl(raw: string): string {
   }
 }
 
+// ── Text Normalization ───────────────────────────────────────────────────
+
+function normalizeText(title: string, summary: string): string {
+  return `${title} ${summary}`
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 // ── XML Helpers ──────────────────────────────────────────────────────────
 
 function extractText(xml: string, tag: string): string {
@@ -44,103 +54,193 @@ function extractAttr(xml: string, tag: string, attr: string): string {
   return m ? m[1].trim() : "";
 }
 
-// ── Neighborhood Detection ───────────────────────────────────────────────
+// ── 3-Tier Location Detection ────────────────────────────────────────────
 
-const NEIGHBORHOOD_PATTERNS: [RegExp, string][] = [
-  [/\bporter\s+ranch\b/i, "Porter Ranch"],
-  [/\bgranada\s+hills\b/i, "Granada Hills"],
-  [/\bcanoga\s+park\b/i, "Canoga Park"],
-  [/\bnorth\s+hills\b/i, "North Hills"],
-  [/\bmission\s+hills\b/i, "Mission Hills"],
-  [/\bnorthridge\b/i, "Northridge"],
-  [/\bchatsworth\b/i, "Chatsworth"],
-  [/\breseda\b/i, "Reseda"],
-  [/\bwinnetka\b/i, "Winnetka"],
-  [/\bencino\b/i, "Encino"],
-  [/\btarzana\b/i, "Tarzana"],
-  [/\bwoodland\s+hills\b/i, "Woodland Hills"],
-  [/\bwest\s+hills\b/i, "West Hills"],
-  [/\bpacoima\b/i, "Pacoima"],
-  [/\barleta\b/i, "Arleta"],
-  [/\bsylmar\b/i, "Sylmar"],
-  [/\bsun\s+valley\b/i, "Sun Valley"],
-  [/\bpanorama\s+city\b/i, "Panorama City"],
-  [/\bvan\s+nuys\b/i, "Van Nuys"],
-  [/\bsherman\s+oaks\b/i, "Sherman Oaks"],
-  [/\bstudio\s+city\b/i, "Studio City"],
-  [/\blake\s+balboa\b/i, "Lake Balboa"],
-  [/\bcsun\b/i, "Northridge"],
-  [/\bcal\s+state\s+northridge\b/i, "Northridge"],
-  [/\bdevonshire\b/i, "Northridge"],
-  [/\bnordhoff\b/i, "Northridge"],
-  [/\bplummer\b/i, "Northridge"],
-  [/\btampa\s+ave\b/i, "Northridge"],
-  [/\blassen\s+st\b/i, "Northridge"],
-  [/\bnorthridge\s+park\b/i, "Northridge"],
-  [/\bnorthridge\s+academy\b/i, "Northridge"],
-  [/\bnobel\s+m/i, "Northridge"],
-  [/\bbeckford\b/i, "Northridge"],
-  [/\bdearborn\s+park\b/i, "Northridge"],
-  [/\brinaldi\b/i, "Porter Ranch"],
-  [/\bsesnon\b/i, "Porter Ranch"],
-  [/\bporter\s+ranch\s+town\s+center\b/i, "Porter Ranch"],
-  [/\baliso\s+canyon\b/i, "Porter Ranch"],
-  [/\blimekiln\s+canyon\b/i, "Porter Ranch"],
-  [/\bbee\s+canyon\b/i, "Porter Ranch"],
-  [/\bgranada\s+hills\s+charter\b/i, "Granada Hills"],
-  [/\bcleveland\s+h/i, "Granada Hills"],
-  [/\bzelzah\b/i, "Granada Hills"],
-  [/\bknollwood\b/i, "Granada Hills"],
-  [/\btopanga\b/i, "Chatsworth"],
-  [/\bbox\s+canyon\b/i, "Chatsworth"],
-  [/\bsanta\s+susana\b/i, "Chatsworth"],
-  [/\bchatsworth\s+h/i, "Chatsworth"],
-  [/\bstoney\s+point\b/i, "Chatsworth"],
-  [/\bvanalden\b/i, "Reseda"],
-  [/\bde\s+soto\b/i, "Canoga Park"],
-  [/\bvanowen.*canoga\b/i, "Canoga Park"],
-  [/\bowensmouth\b/i, "Canoga Park"],
-  [/\broscoe\b/i, "North Hills"],
-  [/\bwoodman\b/i, "North Hills"],
-  [/\bbrand\s+park\b/i, "Mission Hills"],
-  [/\bsepulveda\s+va\b/i, "Mission Hills"],
-  [/\bsylmar\s+h/i, "Sylmar"],
-  [/\bold\s+san\s+fernando\s+rd\b/i, "Sylmar"],
-  [/\bbalboa\b/i, "Encino"],
-  [/\bwoodley\b/i, "Encino"],
-  [/\bsepulveda\s+basin\b/i, "Encino"],
-  [/\bsan\s+fernando\s+valley\b/i, "San Fernando Valley"],
-  [/\bsfv\b/i, "San Fernando Valley"],
+// Priority order for multi-match resolution
+const PRIORITY_NEIGHBORHOODS = [
+  "Northridge", "Porter Ranch", "Granada Hills", "Chatsworth",
+  "Reseda", "Winnetka", "North Hills", "Canoga Park", "Mission Hills",
+  "Lake Balboa", "Van Nuys", "Sherman Oaks", "Encino", "San Fernando",
+  "Tarzana", "Woodland Hills", "West Hills", "Pacoima", "Arleta",
+  "Sylmar", "Sun Valley", "Panorama City", "Studio City",
 ];
 
-function detectNeighborhood(title: string, summary: string, coverageArea: string | null): string {
-  const text = `${title} ${summary}`;
-  for (const [pattern, name] of NEIGHBORHOOD_PATTERNS) {
-    if (pattern.test(text)) return name;
-  }
-  if (coverageArea) return coverageArea;
-  return "Unknown";
+// Tier 1: City names (highest confidence) — multi-word first
+const TIER1_CITIES: [RegExp, string][] = [
+  [/\bporter\s*ranch\b/, "Porter Ranch"],
+  [/\bgranada\s*hills\b/, "Granada Hills"],
+  [/\bcanoga\s*park\b/, "Canoga Park"],
+  [/\bnorth\s*hills\b/, "North Hills"],
+  [/\bmission\s*hills\b/, "Mission Hills"],
+  [/\blake\s*balboa\b/, "Lake Balboa"],
+  [/\bvan\s*nuys\b/, "Van Nuys"],
+  [/\bsherman\s*oaks\b/, "Sherman Oaks"],
+  [/\bwoodland\s*hills\b/, "Woodland Hills"],
+  [/\bwest\s*hills\b/, "West Hills"],
+  [/\bsun\s*valley\b/, "Sun Valley"],
+  [/\bpanorama\s*city\b/, "Panorama City"],
+  [/\bstudio\s*city\b/, "Studio City"],
+  [/\bsan\s*fernando\s*valley\b/, "San Fernando Valley"],
+  [/\bnorthridge\b/, "Northridge"],
+  [/\bchatsworth\b/, "Chatsworth"],
+  [/\breseda\b/, "Reseda"],
+  [/\bwinnetka\b/, "Winnetka"],
+  [/\bencino\b/, "Encino"],
+  [/\btarzana\b/, "Tarzana"],
+  [/\bpacoima\b/, "Pacoima"],
+  [/\barleta\b/, "Arleta"],
+  [/\bsylmar\b/, "Sylmar"],
+  [/\bsan\s*fernando\b/, "San Fernando"],
+];
+
+// Tier 2: Landmarks (medium confidence)
+const TIER2_LANDMARKS: [RegExp, string][] = [
+  [/\bcal\s*state\s*northridge\b/, "Northridge"],
+  [/\bcsun\b/, "Northridge"],
+  [/\bdevonshire\s+division\b/, "Northridge"],
+  [/\bnorthridge\s+academy\b/, "Northridge"],
+  [/\bnorthridge\s+park\b/, "Northridge"],
+  [/\bnobel\s+middle\b/, "Northridge"],
+  [/\bbeckford\s+(elementary|charter|school)\b/, "Northridge"],
+  [/\bdearborn\s+park\b/, "Northridge"],
+  [/\bporter\s+ranch\s+town\s+center\b/, "Porter Ranch"],
+  [/\baliso\s+canyon\b/, "Porter Ranch"],
+  [/\blimekiln\s+canyon\b/, "Porter Ranch"],
+  [/\bbee\s+canyon\b/, "Porter Ranch"],
+  [/\bgranada\s+hills\s+charter\b/, "Granada Hills"],
+  [/\bcleveland\s+high\b/, "Granada Hills"],
+  [/\bknollwood\s+(country|golf)\b/, "Granada Hills"],
+  [/\btopanga\s+canyon\b/, "Chatsworth"],
+  [/\btopanga\s+boulevard\b/, "Chatsworth"],
+  [/\bbox\s+canyon\b/, "Chatsworth"],
+  [/\bsanta\s+susana\b/, "Chatsworth"],
+  [/\bstoney\s+point\b/, "Chatsworth"],
+  [/\bchatsworth\s+high\b/, "Chatsworth"],
+  [/\bbalboa\s+park\b/, "Van Nuys"],
+  [/\bbalboa\s+boulevard\b/, "Van Nuys"],
+  [/\bvan\s+nuys\s+airport\b/, "Van Nuys"],
+  [/\bsepulveda\s+basin\b/, "Encino"],
+  [/\bsylmar\s+high\b/, "Sylmar"],
+  [/\bbrand\s+park\b/, "Mission Hills"],
+  [/\bowensmouth\b/, "Canoga Park"],
+];
+
+// Tier 3: Streets & Freeways (low confidence)
+const TIER3_STREETS: [RegExp, string][] = [
+  [/\b118\s*(freeway|fwy)\b/, "Chatsworth"],
+  [/\bsr[\s-]*118\b/, "Chatsworth"],
+  [/\broute\s*118\b/, "Chatsworth"],
+  [/\b405\s*(freeway|fwy)\b/, "Van Nuys"],
+  [/\bi[\s-]*405\b/, "Van Nuys"],
+  [/\b101\s*(freeway|fwy)\b/, "Encino"],
+  [/\bus[\s-]*101\b/, "Encino"],
+  [/\breseda\s+(blvd|boulevard)\b/, "Reseda"],
+  [/\bbalboa\s+(blvd|boulevard)\b/, "Van Nuys"],
+  [/\btopanga\s+canyon\s+(blvd|boulevard)\b/, "Chatsworth"],
+  [/\brinaldi\s+(st|street)\b/, "Porter Ranch"],
+  [/\bsesnon\s+(blvd|boulevard)\b/, "Porter Ranch"],
+  [/\bzelzah\s+(ave|avenue)\b/, "Granada Hills"],
+  [/\bnordhoff\s+(st|street)\b/, "Northridge"],
+  [/\bdevonshire\s+(st|street)\b/, "Northridge"],
+  [/\bplummer\s+(st|street)\b/, "Northridge"],
+  [/\btampa\s+(ave|avenue)\b/, "Northridge"],
+  [/\blassen\s+(st|street)\b/, "Northridge"],
+  [/\bde\s+soto\s+(ave|avenue)\b/, "Canoga Park"],
+  [/\broscoe\s+(blvd|boulevard)\b/, "North Hills"],
+  [/\bwoodman\s+(ave|avenue)\b/, "North Hills"],
+  [/\bold\s+san\s+fernando\s+(rd|road)\b/, "Sylmar"],
+];
+
+const STRONG_LOCAL_CITIES = new Set([
+  "Northridge", "Porter Ranch", "Granada Hills", "Chatsworth",
+]);
+const OTHER_VALLEY_CITIES = new Set([
+  "Reseda", "Winnetka", "North Hills", "Canoga Park", "Mission Hills",
+  "Lake Balboa", "Van Nuys", "Sherman Oaks", "Encino", "San Fernando",
+  "Tarzana", "Woodland Hills", "West Hills", "Pacoima", "Arleta",
+  "Sylmar", "Sun Valley", "Panorama City", "Studio City",
+]);
+
+interface DetectionResult {
+  neighborhood: string;
+  tier: number; // 1=city, 2=landmark, 3=street, 0=fallback
+  matchedPattern: string;
 }
 
-// ── Relevance Scoring (Part 9) ───────────────────────────────────────────
+function detectNeighborhood(title: string, summary: string, coverageArea: string | null): DetectionResult {
+  const text = normalizeText(title, summary);
+  const allMatches: { name: string; tier: number; pattern: string }[] = [];
 
-const STRONG_LOCAL = /\b(Northridge|Porter\s+Ranch|Granada\s+Hills|Chatsworth|Reseda|Winnetka|North\s+Hills|Canoga\s+Park|Mission\s+Hills|CSUN|San\s+Fernando\s+Valley)\b/i;
-const PRIORITY_KEYWORDS = /\b(fire|shooting|police|evacuation|road\s+closure|development|restaurant\s+opening|school\s+board|construction|earthquake|crash|arrest|homicide|robbery|power\s+outage|water\s+main|zoning|council\s+vote)\b/i;
-const LOW_PRIORITY = /\b(sports|national\s+news|celebrity|basketball|baseball|football|soccer|tournament|athletics)\b/i;
+  for (const [re, name] of TIER1_CITIES) {
+    if (re.test(text)) allMatches.push({ name, tier: 1, pattern: re.source });
+  }
+  for (const [re, name] of TIER2_LANDMARKS) {
+    if (re.test(text)) allMatches.push({ name, tier: 2, pattern: re.source });
+  }
+  for (const [re, name] of TIER3_STREETS) {
+    if (re.test(text)) allMatches.push({ name, tier: 3, pattern: re.source });
+  }
 
-function scoreArticle(title: string, summary: string, publishedAt: string | null, isHyperlocal: boolean): number {
-  const text = `${title} ${summary}`;
+  if (allMatches.length === 0) {
+    return { neighborhood: coverageArea || "Unknown", tier: 0, matchedPattern: "fallback" };
+  }
+
+  // Pick highest tier match; within same tier, use priority order
+  allMatches.sort((a, b) => {
+    if (a.tier !== b.tier) return a.tier - b.tier;
+    const ai = PRIORITY_NEIGHBORHOODS.indexOf(a.name);
+    const bi = PRIORITY_NEIGHBORHOODS.indexOf(b.name);
+    return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+  });
+
+  const best = allMatches[0];
+  console.log(`[detect] "${title.slice(0, 60)}" → ${best.name} (tier ${best.tier}, pattern: ${best.pattern})`);
+  return { neighborhood: best.name, tier: best.tier, matchedPattern: best.pattern };
+}
+
+// ── Relevance Scoring ────────────────────────────────────────────────────
+
+const PRIORITY_KEYWORDS = /\b(fire|shooting|police|evacuation|road\s*closure|development|restaurant\s*opening|school\s*board|construction|earthquake|crash|arrest|homicide|robbery|power\s*outage|water\s*main|zoning|council\s*vote)\b/i;
+const LOW_PRIORITY = /\b(sports|national\s*news|celebrity|basketball|baseball|football|soccer|tournament|athletics)\b/i;
+
+function scoreArticle(
+  title: string,
+  summary: string,
+  publishedAt: string | null,
+  isHyperlocal: boolean,
+  detection: DetectionResult,
+): number {
+  const text = normalizeText(title, summary);
   let score = 0;
-  if (STRONG_LOCAL.test(text)) score += 3;
+
+  // Location signals
+  if (detection.tier === 1) {
+    score += STRONG_LOCAL_CITIES.has(detection.neighborhood) ? 3 : 2;
+  } else if (detection.tier === 2) {
+    score += 1;
+  } else if (detection.tier === 3) {
+    score += 1;
+  } else {
+    score -= 2; // no location detected
+  }
+
+  // Priority events
   if (PRIORITY_KEYWORDS.test(text)) score += 2;
+
+  // Hyperlocal source bonus
   if (isHyperlocal) score += 1;
-  if (LOW_PRIORITY.test(text) && !STRONG_LOCAL.test(text)) score -= 2;
+
+  // Sports penalty
+  if (LOW_PRIORITY.test(text) && detection.tier === 0) score -= 2;
+
+  // Freshness
   if (!publishedAt) {
     score -= 2;
   } else {
     const hours = (Date.now() - new Date(publishedAt).getTime()) / 3600000;
     if (hours <= 24) score += 1;
   }
+
   return score;
 }
 
@@ -267,22 +367,25 @@ Deno.serve(async (req) => {
 
         const newArticles = items
           .filter((item) => item.url && !existingUrls.has(item.url))
-          .map((item) => ({
-            title: item.title,
-            url: item.url,
-            published_at: item.published_at,
-            summary: item.summary || null,
-            source_id: source.id,
-            source_name: source.name,
-            status: "new" as const,
-            relevance_score: scoreArticle(item.title, item.summary, item.published_at, isHyperlocal),
-            freshness_bucket: getFreshnessBucket(item.published_at) as any,
-            is_duplicate: false,
-            use_for_newsletter: false,
-            use_for_social: false,
-            topic_guess: LOW_PRIORITY.test(`${item.title} ${item.summary}`) ? "sports" : null,
-            neighborhood_guess: detectNeighborhood(item.title, item.summary, source.coverage_area),
-          }));
+          .map((item) => {
+            const detection = detectNeighborhood(item.title, item.summary, source.coverage_area);
+            return {
+              title: item.title,
+              url: item.url,
+              published_at: item.published_at,
+              summary: item.summary || null,
+              source_id: source.id,
+              source_name: source.name,
+              status: "new" as const,
+              relevance_score: scoreArticle(item.title, item.summary, item.published_at, isHyperlocal, detection),
+              freshness_bucket: getFreshnessBucket(item.published_at) as any,
+              is_duplicate: false,
+              use_for_newsletter: false,
+              use_for_social: false,
+              topic_guess: LOW_PRIORITY.test(`${item.title} ${item.summary}`) ? "sports" : null,
+              neighborhood_guess: detection.neighborhood,
+            };
+          });
 
         if (newArticles.length > 0) {
           for (let i = 0; i < newArticles.length; i += 50) {
@@ -314,7 +417,6 @@ Deno.serve(async (req) => {
           })
           .eq("id", source.id);
 
-        // Log per-source scan
         await supabase.from("scan_runs").insert({
           started_at: scanStart,
           completed_at: new Date().toISOString(),

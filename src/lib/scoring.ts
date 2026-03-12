@@ -2,6 +2,9 @@ import type { Article } from './types';
 
 export interface ScoringWeights {
   strongLocal: number;
+  otherValley: number;
+  landmarkSignal: number;
+  streetSignal: number;
   priorityKeyword: number;
   hyperlocalSource: number;
   fresh24h: number;
@@ -9,11 +12,14 @@ export interface ScoringWeights {
   sportsNoLocal: number;
   missingDate: number;
   duplicate: number;
-  outsideCoverage: number;
+  noLocation: number;
 }
 
 export const DEFAULT_WEIGHTS: ScoringWeights = {
   strongLocal: 3,
+  otherValley: 2,
+  landmarkSignal: 1,
+  streetSignal: 1,
   priorityKeyword: 2,
   hyperlocalSource: 1,
   fresh24h: 2,
@@ -21,15 +27,24 @@ export const DEFAULT_WEIGHTS: ScoringWeights = {
   sportsNoLocal: -2,
   missingDate: -2,
   duplicate: -2,
-  outsideCoverage: -2,
+  noLocation: -2,
 };
 
-const STRONG_LOCAL_AREAS = [
+const STRONG_LOCAL_CITIES = new Set([
   'Northridge', 'Porter Ranch', 'Granada Hills', 'Chatsworth',
-  'Reseda', 'Winnetka', 'North Hills', 'Canoga Park',
-  'Mission Hills', 'San Fernando Valley',
-];
-const STRONG_LOCAL_RE = /\b(Northridge|Porter\s+Ranch|Granada\s+Hills|Chatsworth|Reseda|Winnetka|North\s+Hills|Canoga\s+Park|Mission\s+Hills|CSUN|San\s+Fernando\s+Valley)\b/i;
+]);
+
+const OTHER_VALLEY_CITIES = new Set([
+  'Reseda', 'Winnetka', 'North Hills', 'Canoga Park', 'Mission Hills',
+  'Lake Balboa', 'Van Nuys', 'Sherman Oaks', 'Encino', 'San Fernando',
+  'Tarzana', 'Woodland Hills', 'West Hills', 'Pacoima', 'Arleta',
+  'Sylmar', 'Sun Valley', 'Panorama City', 'Studio City',
+]);
+
+const STRONG_LOCAL_RE = /\b(Northridge|Porter\s+Ranch|Granada\s+Hills|Chatsworth)\b/i;
+const OTHER_VALLEY_RE = /\b(Reseda|Winnetka|North\s+Hills|Canoga\s+Park|Mission\s+Hills|Lake\s+Balboa|Van\s+Nuys|Sherman\s+Oaks|Encino|Tarzana|Woodland\s+Hills|West\s+Hills|Pacoima|Arleta|Sylmar|Sun\s+Valley|Panorama\s+City|Studio\s+City|San\s+Fernando)\b/i;
+const LANDMARK_RE = /\b(CSUN|Cal\s+State\s+Northridge|Devonshire\s+Division|Topanga\s+Canyon|Balboa\s+Park|Van\s+Nuys\s+Airport|Sepulveda\s+Basin|Stoney\s+Point|Granada\s+Hills\s+Charter|Cleveland\s+High|Porter\s+Ranch\s+Town\s+Center)\b/i;
+const STREET_RE = /\b(118\s*(freeway|fwy)|405\s*(freeway|fwy)|101\s*(freeway|fwy)|Reseda\s+Blvd|Balboa\s+Blvd|Topanga\s+Canyon\s+Blvd|Rinaldi|Sesnon|Nordhoff\s+St|Devonshire\s+St|De\s+Soto\s+Ave)\b/i;
 const PRIORITY_RE = /\b(fire|shooting|police|evacuation|road\s+closure|development|restaurant\s+opening|school\s+board|construction|earthquake|crash|arrest|homicide|robbery|power\s+outage|water\s+main|zoning|council\s+vote)\b/i;
 const SPORTS_RE = /\b(basketball|baseball|football|soccer|tournament|athletics|sports)\b/i;
 
@@ -39,12 +54,20 @@ export function calculateRelevanceScore(
   weights: ScoringWeights = DEFAULT_WEIGHTS
 ): number {
   let score = 0;
-  const title = (article.title || '').toLowerCase();
+  const title = (article.title || '');
   const neighborhood = article.neighborhood_guess || '';
 
-  // Strong local signal
-  if (STRONG_LOCAL_AREAS.includes(neighborhood) || STRONG_LOCAL_RE.test(title)) {
+  // Tiered location scoring
+  if (STRONG_LOCAL_CITIES.has(neighborhood) || STRONG_LOCAL_RE.test(title)) {
     score += weights.strongLocal;
+  } else if (OTHER_VALLEY_CITIES.has(neighborhood) || OTHER_VALLEY_RE.test(title)) {
+    score += weights.otherValley;
+  } else if (LANDMARK_RE.test(title)) {
+    score += weights.landmarkSignal;
+  } else if (STREET_RE.test(title)) {
+    score += weights.streetSignal;
+  } else if (neighborhood === 'San Fernando Valley' || neighborhood === 'Unknown' || !neighborhood) {
+    score += weights.noLocation;
   }
 
   // Priority keyword
@@ -63,16 +86,11 @@ export function calculateRelevanceScore(
   }
 
   // Sports without local context
-  if (SPORTS_RE.test(title) && !STRONG_LOCAL_RE.test(title)) {
+  if (SPORTS_RE.test(title) && !STRONG_LOCAL_RE.test(title) && !OTHER_VALLEY_RE.test(title)) {
     score += weights.sportsNoLocal;
   }
 
   if (article.is_duplicate) score += weights.duplicate;
-
-  const knownAreas = [...STRONG_LOCAL_AREAS, 'Mission Hills', 'Unknown'];
-  if (neighborhood && !knownAreas.includes(neighborhood)) {
-    score += weights.outsideCoverage;
-  }
 
   return Math.max(0, score);
 }
